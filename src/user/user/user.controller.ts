@@ -1,4 +1,19 @@
-import { Body, Controller, Get, Header, HttpCode, HttpRedirectResponse, Inject, Param, Post, Query, Redirect, Req, Res } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Header,
+    HttpCode, HttpException,
+    HttpRedirectResponse,
+    Inject,
+    Param, ParseIntPipe,
+    Post,
+    Query,
+    Redirect,
+    Req,
+    Res,
+    UseFilters, UseInterceptors, UsePipes,
+} from '@nestjs/common';
 import { Request, response, Response } from 'express';
 import { UserService } from './user.service';
 import { Connection } from '../connection/connection';
@@ -6,6 +21,10 @@ import { MailService } from '../mail/mail.service';
 import { UserRepository } from '../user-repository/user-repository';
 import { MemberService } from '../member/member.service';
 import { User } from 'generated/prisma';
+import { ValidationFilter } from '../../validation/validation.filter';
+import { ValidationPipe } from '../../validation/validation.pipe';
+import { LoginUserRequest, loginUserRequestValidation } from '../../model/login.model';
+import { TimeInterceptor } from '../../time/time.interceptor';
 
 @Controller('/api/users')
 export class UserController {
@@ -18,6 +37,25 @@ export class UserController {
         private userRepository: UserRepository,
         private memberService: MemberService
     ) {}
+
+
+    @UseFilters(ValidationFilter)
+    @UsePipes(new ValidationPipe(loginUserRequestValidation)) //semua parameter akan di validasi bukan body tadi terlalu beresiko jika tidak di handle
+    @Header("Content-Type", "application/json")
+    @UseInterceptors(TimeInterceptor) // menambahkan interceptor
+    @Post('/login')
+    login(
+      @Query('name') name: string, //akan membuat eror invalid type karena di validationPipe itu tipenya loginRequest zod bukan zod string
+      @Body() request: LoginUserRequest
+    ){
+        // return `Hello ${request.username}`
+        // retrun jadi json karena mau intercept tambah data
+
+        return {
+            data: `Hello ${request.username}`
+
+        }
+    }
 
     @Get('/connection')
     async getConnection(): Promise<string> {
@@ -36,10 +74,18 @@ export class UserController {
         @Query('first_name') first_name: string,
         @Query('last_name') last_name: string
     ): Promise<User> {
+        //HttpException
+        if (!first_name) {
+            throw new HttpException({
+                code: 400,
+                errors: "First name is required"
+            }, 400)
+        }
         return this.userRepository.save(first_name, last_name)
     }
 
     @Get('/hello')
+    /*@UseFilters(ValidationFilter)*/ //penggunaan filter atau bisa juga langsung satu controller
     async sayHello(
         @Query('name') name: string,
     ): Promise<string> {
@@ -98,12 +144,22 @@ export class UserController {
     //     return `Hello ${firstName} ${lastName}`
     // }
 
-    
-
+    //Pipe untuk memastikan id integer dan mengubahnya
+    // kalau gak pakai ParseIntPipe maka akan dianggap string karena compile JS
+    // pipe bisa di param, query, atau body
+    //pipe bukan hanya validasi atau konversi intinya paramnya diolah dulu atau transformasi
+    //pipe bisa di pakai di semua controller
     @Get('/:id')
-    getById(@Param('id') id: string): string {
+    getById(@Param('id', ParseIntPipe) id: number): string {
+        console.info(id*10);
         return `GET ${id}`
     }
+
+    //Normal
+    // @Get('/:id')
+    // getById(@Param('id') id: string): string {
+    //     return `GET ${id}`
+    // }
     // @Get('/:id')
     // getById(@Req() request: Request): string {
     //     return `GET ${request.params.id}`
