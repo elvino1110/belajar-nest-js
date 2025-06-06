@@ -5,3 +5,8 @@ Content-Type: application/json
   "username": "vino",
   "password": "vino"
 }
+
+###
+
+GET http://localhost:3000/api/users/current
+x-username: 2

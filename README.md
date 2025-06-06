@@ -30,7 +30,13 @@
 ```bash
 $ npm install
 ```
-
+## Prisma setup
+```bash
+npx prisma generate
+```
+```bash
+npx prisma migrate dev
+```
 ## Compile and run the project
 
 ```bash

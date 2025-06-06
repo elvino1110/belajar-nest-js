@@ -8,6 +8,9 @@ import { WinstonModule } from 'nest-winston';
 import { ValidationModule } from './validation/validation.module';
 import * as winston from 'winston';
 import { LogMiddleware } from './log/log.middleware';
+import { AuthMiddleware } from './auth/auth.middleware';
+import { APP_GUARD } from '@nestjs/core';
+import { RoleGuard } from './role/role.guard';
 @Module({
   imports: [
     WinstonModule.forRoot({ //forRoot salah satu Dynamic Module
@@ -24,7 +27,13 @@ import { LogMiddleware } from './log/log.middleware';
     ValidationModule.forRoot(true)
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD, //guard global
+      useClass: RoleGuard //akan menjadi global
+    }
+  ],
 })
 //registrasi middleware
 export class AppModule implements NestModule{
@@ -32,6 +41,11 @@ export class AppModule implements NestModule{
     consumer.apply(LogMiddleware).forRoutes({ //Middleware bisa lebih dari satu langsung , , ,
       path: '/api/*', //semua url /api/ atau bisa juga langsung ke Controllernya , , , 
       method: RequestMethod.ALL //semua method
+    })
+
+    consumer.apply(AuthMiddleware).forRoutes({ //Middleware bisa lebih dari satu langsung , , ,
+      path: '/api/users/current', //semua url /api/ atau bisa juga langsung ke Controllernya , , ,
+      method: RequestMethod.GET //semua method
     })
   }
 }

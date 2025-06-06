@@ -23,6 +23,10 @@ async function bootstrap() {
   app.useGlobalFilters(new ValidationFilter())
   // app.useGlobalPipes() //global pipes
   // app.useGlobalInterceptors() //global harus dipastikan responsenya json atau text
+  // app.useGlobalGuards() //global untuk guards role
+
+  //lifecycle
+  app.enableShutdownHooks()
 
   await app.listen(process.env.PORT ?? 3000);
 }

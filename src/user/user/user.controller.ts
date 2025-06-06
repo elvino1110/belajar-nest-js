@@ -12,7 +12,7 @@ import {
     Redirect,
     Req,
     Res,
-    UseFilters, UseInterceptors, UsePipes,
+    UseFilters, UseGuards, UseInterceptors, UsePipes,
 } from '@nestjs/common';
 import { Request, response, Response } from 'express';
 import { UserService } from './user.service';
@@ -25,7 +25,11 @@ import { ValidationFilter } from '../../validation/validation.filter';
 import { ValidationPipe } from '../../validation/validation.pipe';
 import { LoginUserRequest, loginUserRequestValidation } from '../../model/login.model';
 import { TimeInterceptor } from '../../time/time.interceptor';
+import { Auth } from '../../auth/auth.decorator';
+import { RoleGuard } from '../../role/role.guard';
+import { Roles } from '../../role/roles.decorator';
 
+// @UseGuards(RoleGuard) coba diganti ke global app
 @Controller('/api/users')
 export class UserController {
 
@@ -38,6 +42,15 @@ export class UserController {
         private memberService: MemberService
     ) {}
 
+    @Get('/current')
+    //diganti karena terlalu banyak new Guard akan berat cukup Singleton jadi tidak ada new new lagi
+    /*@UseGuards(new RoleGuard(['admin', 'operator']))*/ //bisa juga digunakan dalam controller biasanya untuk authorization
+    @Roles(['admin', 'operator'])
+    current(@Auth() user: User): Record<string, any> {
+        return {
+         data: `Hello ${user.first_name} ${user.last_name}`
+        }
+    }
 
     @UseFilters(ValidationFilter)
     @UsePipes(new ValidationPipe(loginUserRequestValidation)) //semua parameter akan di validasi bukan body tadi terlalu beresiko jika tidak di handle
